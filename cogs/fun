@@ -1,0 +1,110 @@
+import discord
+from discord.ext import commands
+import random
+
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+
+client = commands.Bot(command_prefix='#', intents=intents)
+import giphy_client
+from giphy_client.rest import ApiException
+
+class Fun(commands.Cog):
+    def __init__(self,client):
+        self.client=client
+
+
+    @client.command(aliases=['hey', 'hello', 'hi', 'Hey', 'Hello', 'Hi', 'howdy', 'Howdy'])
+    async def sup(self,ctx):
+        greetings = ["gomma.",
+                     "chutney sambar.",
+                     "Hey.",
+                     "Heyyy!",
+                     "Sup homie.",
+                     "Hello.",
+                     "Hi.",
+                     "Why you!",
+                     "Howdy.",
+                     "We aren't that close dude.",
+                     "It’s good to see you.",
+                     "G’day!",
+                     "Hello there.",
+                     "Greetings.",
+                     "ew."]
+        await ctx.send(f'{random.choice(greetings)}')
+
+
+    @client.command(aliases=['Bye', 'adios', 'Goodbye', 'goodbye', 'Adios', 'Farewell', 'farewell'])
+    async def bye(self,ctx):
+        farewell = ['Bye.',
+                    'Goodbye.',
+                    'Adios.',
+                    'Farewell.',
+                    "I'll miss you babe.",
+                    "See you soon.",
+                    "Finallyyy.",
+                    "Alreadyyy.",
+                    "What's the rush darling.",
+                    "You better be back soon!"]
+        await ctx.send(f'{random.choice(farewell)}')
+
+    @client.command(aliases=['8ball', 'balls'])
+    async def _8ball(self,ctx, *, question):
+        responses = ["It is certain.",
+                     "It is decidedly so.",
+                     "Without a doubt.",
+                     "Yes - definitely.",
+                     "You may rely on it.",
+                     "As I see it, yes.",
+                     "Most likely.",
+                     "Outlook good.",
+                     "Yes.",
+                     "Signs point to yes.",
+                     "Reply hazy, try again.",
+                     "Ask again later.",
+                     "What do you think?",
+                     "Let's just sit and think about it first.",
+                     "really?",
+                     "Whatever you want dude.",
+                     "Isn't it obvious",
+                     "I honestly don't care.",
+                     "You broke the ball with that question.",
+                     "Please try again later.",
+                     "Better not tell you now.",
+                     "Cannot predict now.",
+                     "Concentrate and ask again.",
+                     "Don't count on it.",
+                     "My reply is no.",
+                     "My sources say no.",
+                     "Outlook not so good.",
+                     "Very doubtful."]
+        await ctx.send(f'{random.choice(responses)}')
+
+    @client.command(aliases=['cointoss'])
+    async def coinflip(self,ctx):
+        sides = ["Heads",
+                 "tails"]
+        await ctx.send(f'{random.choice(sides)}')
+        
+    @client.command()
+    async def gif(self,ctx, *, q="anime hug"):
+        api_key = "mPn9VBQahoJcb89UL1r6b00rkKrGi7cz"
+        api_instance = giphy_client.DefaultApi()
+
+        try:
+            # Search Endpoint
+
+            api_response = api_instance.gifs_search_get(api_key, q, limit=20, rating='g')
+            lst = list(api_response.data)
+            giff = random.choice(lst)
+
+            emb = discord.Embed(title=q)
+            emb.set_image(url=f'https://media.giphy.com/media/{giff.id}/giphy.gif')
+
+            await ctx.channel.send(embed=emb)
+        except ApiException as e:
+            print("Exception when calling DefaultApi->gifs_search_get: %s\n" % e)
+
+def setup(client):
+    client.add_cog(Fun(client))
