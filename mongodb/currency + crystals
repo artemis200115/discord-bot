@@ -1,0 +1,376 @@
+import discord
+import os
+import random
+from discord.ext import commands
+from pymongo import MongoClient
+from cogs import crystals
+
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+
+client = commands.Bot(command_prefix='#', intents=intents)
+async def update_crystals(ctx, num, pl, amt):
+    name_1 = None
+
+    if (pl == "saturn(rings)"):
+
+        if (10 <= num <= 20):
+            name_1 = "sapphire"
+
+        if (5 <= num <= 9):
+            name_1 = "watermelon tourmaline"
+
+        if (21 <= num <= 30):
+            name_1 = "carnelian"
+
+        if (num < 5):
+            name_1 = "opal"
+
+        if (31 <= num <= 36):
+            name_1 = "aquamarine"
+
+    if (pl == "pluto"):
+
+        if (num <= 5):
+            name_1 = "bismuth"
+
+        if (6 <= num <= 9):
+            name_1 = "aura quartz"
+
+    if (pl == "venus"):
+
+        if (num <= 5):
+            name_1 = "rainbow obsidian"
+
+        if (6 <= num <= 9):
+            name_1 = "osmium"
+
+        if (10 <= num <= 25):
+            name_1 = "cat's eye"
+
+        if (41 <= num <= 49):
+            name_1 = "amethyst"
+
+        if (26 <= num <= 34):
+            name_1 = "fluorite"
+
+        if (36 <= num <= 40):
+            name_1 = "rose quartz"
+
+    if (pl == "earth"):
+        if (30 >= num >= 20):
+            name_1 = "ruby"
+
+        if (40 >= num >= 31):
+            name_1 = "emerald"
+
+        if (49 >= num >= 41):
+            name_1 = "orange calcite"
+
+        if (15 <= num <= 19):
+            name_1 = "fluorite"
+
+        if (num < 5):
+            name_1 = "moonstone"
+
+    if (pl == "mercury"):
+        if (30 >= num >= 20):
+            name_1 = "celestine"
+
+        if (49 >= num >= 41):
+            name_1 = "pearl"
+
+        if (15 <= num <= 19):
+            name_1 = "turquoise"
+
+        if (31 <= num <= 39):
+            name_1 = "peridot"
+
+        if (num < 5):
+            name_1 = "sunstone"
+
+    if (pl == "mars"):
+        if (30 >= num >= 20):
+            name_1 = "amethyst"
+
+        if (49 >= num >= 41):
+            name_1 = "ruby"
+
+        if (15 <= num <= 19):
+            name_1 = "sunstone"
+
+        if (31 <= num <= 39):
+            name_1 = "carnelian"
+
+    if (pl == "jupiter"):
+        if (25 >= num >= 10):
+            name_1 = "plasma"
+
+        if (31 >= num >= 26):
+            name_1 = "pyrite"
+
+        if (42 >= num >= 32):
+            name_1 = "rhodochrosite"
+
+    if (pl == "neptune"):
+        if (25 >= num >= 10):
+            name_1 = "vanadium"
+
+        if (31 >= num >= 26):
+            name_1 = "red beryl"
+
+        if (42 >= num >= 32):
+            name_1 = "chromium"
+
+    if (pl == "uranus"):
+        if (25 >= num >= 10):
+            name_1 = "plasma"
+
+        if (31 >= num >= 26):
+            name_1 = "vanadium"
+
+        if (42 >= num >= 32):
+            name_1 = "celestine"
+
+    if name_1 != None:
+        for item in crystals1:
+            name = item["name"].lower()
+            if name == name_1:
+                name_ = name
+                emoji = item["emoji"]
+                amount = amt
+                await update_clusters(ctx, name_, emoji, amount)
+
+    return name_1
+
+
+async def open_account(user):
+    bank1 = bank.find_one({"id": user.id})
+    if bank1 is None:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": 0, "bank": 0}}, upsert=True)
+
+
+
+async def update_bank(user, change=0, max =0):
+
+    change = int(change)
+
+    if (change<0) and (max == 2):  #for withdraw
+        return 8
+
+    bank1 = bank.find_one({"id":user.id})
+
+    old = bank1["wallet"]
+    old1 = bank1["bank"]
+
+    if (old < change) and (max == 1): #amount in bank less than money to deposit
+        return 5
+    if (old < change) and (max == 4): #amount in bank less than money to give
+        return 5
+    if ((old1 < change) and (max==2)): #amount in bank less than money to withdraw
+        return 6
+
+    new1 = old + change
+    new5 = old-change
+    new4 = old1+ change
+    new2 = old1-change
+    new3 = old + old1
+
+    if max == 0:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": new1}})
+        return 0
+    if max ==1:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": 0, "bank": new1}})
+        return 1
+    if max ==2:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": new1, "bank": new2}})
+        return 2
+    if max ==3:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": new3, "bank": 0}})
+        return 3
+    if max == 4:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": new5}})
+    if max ==7:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": new5, "bank": new4}})
+        return 7
+    if max == 9:
+        bank.update_one({"id": user.id}, {"$set": {"wallet": 0}})
+        return 9
+
+
+
+
+class Currency(commands.Cog):
+
+    def __init__(self, client):
+        self.client = client
+
+
+    # @commands.Cog.listener()
+    # async def on_command_error(self,ctx, error):
+    # if isinstance(error, commands.CommandOnCooldown):
+    # remaining_time = str(datetime.timedelta(seconds=int(error.retry_after)))
+    # em = discord.Embed(title="error")
+    # msg = "still on cooldown! try again after " + str(remaining_time)
+    # em.add_field(name= msg,value="lol")
+    # await ctx.channel.send(embed=em)
+
+    @commands.command(aliases=['bal'])
+    async def balance(self, ctx, member: discord.Member = None):
+        if member is None:
+            await open_account(ctx.author)
+            user = ctx.author
+        else:
+            await open_account(member)
+            user = member
+
+        bank2 = bank.find_one({"id": user.id})
+
+        wallet_amt = bank2["wallet"]
+        bank_amt = bank2["bank"]
+
+        em = discord.Embed(title=f"{user.name}'s balance")
+        em.add_field(name="Wallet", value=wallet_amt)
+        em.add_field(name="Bank balance", value=bank_amt)
+        await ctx.send(embed=em)
+
+    @commands.command()
+    # @commands.cooldown(1,60,commands.BucketType.user)
+    async def mine(self, ctx):
+
+        await open_account(ctx.author)
+
+        log = planets.find_one({"id": ctx.author.id})
+        pl = log["current planet"]
+
+        if log["status"]== "moon":
+            await ctx.send("oops you're on a moon, you can't mine here!")
+            return
+
+        earnings = random.randrange(100)
+        amt = random.randrange(1, 2)
+
+        if (pl == "saturn"):
+            em1 = discord.Embed(title=f"can't mine on saturn's main body", description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+            await ctx.send(embed=em1)
+            return
+        val1 = 0
+
+        if (pl == "jupiter") or (pl == "uranus") or (pl == "neptune"):
+            val1 = await check_windshields(ctx)
+
+        if val1 == 1:
+            em = discord.Embed(title="uh oh! you tried to mine on a gas giant without wind shields",description="you lost 300 berry due to damages.")
+            await update_bank(ctx.author, -300, 0)
+            em.add_field(name="to continue mining without damages, buy wind shields", value="use #buy wind shields",
+                         inline=False)
+            await ctx.send(embed=em)
+            return
+
+        """al = await check_aliens(ctx)
+        if al == 0:
+            em3 = discord.Embed(title=f"looks like you ran into some aliens....",
+                                description="they've looted your entire inventory...")
+            await ctx.send(embed=em3)
+            return"""
+
+        """if al == 1:
+            #em3 = discord.Embed(title=f"looks like you ran into some aliens....",
+                                #description="they've looted everything in your wallet....")
+            #await ctx.send(embed=em3)
+            #return"""
+
+        if earnings > 51:
+            em3 = discord.Embed(title=f"You found {earnings} berry {berry1}",
+                                description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+            await ctx.send(embed=em3)
+
+
+        elif earnings < 51:
+            crys = await update_crystals(ctx, earnings, pl, amt)
+
+            if crys == None:
+                em4 = discord.Embed(title=f"You found {earnings} berry {berry1}",
+                                    description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+                await ctx.send(embed=em4)
+
+
+            else:
+                emoji_1 = 0
+                for item in crystals1:
+                    name_1 = item["name"].lower()
+                    if name_1 == crys:
+                        emoji_1 = item["emoji"]
+
+                em2 = discord.Embed(title=f"You found {earnings} berry {berry1}",
+                                    description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+                em2.add_field(name=f"oh what's this? you also found {amt} {emoji_1} {crys}(s)",
+                              value="꘎♡━━━━━━━━━━━━━━━♡꘎", inline=False)
+                await ctx.send(embed=em2)
+
+        await update_bank(ctx.author, earnings, 0)
+
+        return True
+
+    @commands.command(aliases=['wit'])
+    async def withdraw(self, ctx, amount= None):
+
+        await open_account(ctx.author)
+        if amount== None:
+            await ctx.send("Please enter the amount")
+            return
+
+        if amount == "max":
+            bal = await update_bank(ctx.author, 0, 3)
+
+        else:
+            bal = await update_bank(ctx.author, amount, 2)
+
+        if (bal==5) or (bal==6):
+            em2 = discord.Embed(title=f"oops you don't have enough berry to do that!",
+                                description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+            await ctx.send(embed=em2)
+            return
+
+        if (bal==8):
+            em2 = discord.Embed(title=f"enter a positive number!",
+                                description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+            await ctx.send(embed=em2)
+            return
+
+        em2 = discord.Embed(title=f"you withdrew {amount} berry!",
+                            description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+        await ctx.send(embed=em2)
+        return
+
+    @commands.command(aliases=['dep'])
+    async def deposit(self, ctx, amount = None):
+
+        await open_account(ctx.author)
+        if amount is None:
+            await ctx.send("Please enter the amount")
+            return
+
+        if amount == "max":
+            bal = await update_bank(ctx.author, 0, 1)
+
+        else:
+            bal = await update_bank(ctx.author, amount, 7)
+
+        if (bal == 5) or (bal == 6):
+            em2 = discord.Embed(title=f"oops you don't have enough berry to do that!",
+                                description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+            await ctx.send(embed=em2)
+            return
+
+        if (bal==8):
+            em2 = discord.Embed(title=f"enter a positive number!",
+                                description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+            await ctx.send(embed=em2)
+            return
+
+        em2 = discord.Embed(title=f"you deposited {amount} berry!",
+                            description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+        await ctx.send(embed=em2)
+        return
