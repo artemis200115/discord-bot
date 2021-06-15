@@ -1,0 +1,356 @@
+import os
+import random
+
+import discord
+from discord.ext import commands
+from cogs import currency
+from pymongo import MongoClient
+from cogs import shop
+
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+os.chdir("C:\\Users\\vxg19\\PycharmProjects\\bot_chan\\cogs")
+client = commands.Bot(command_prefix='#', intents=intents)
+async def check_solarshields(ctx):
+    t = 0
+    bag2 = bag1.find_one({"id": ctx.author.id})
+    for i in range(len(bag2["info"]["name"])):
+        if bag2["info"]["name"][i] == "solar shields":
+            t += 1
+            return 0
+
+    if t == 0:
+        return 1
+
+async def open_moonlog(ctx):
+    log = moons.find_one({"id": ctx.author.id})
+    if log is None:
+        newuser = {"id": ctx.author.id, "current moon": "none", "past moons": "none",
+                   "current moon location": {"name": "none", "location": "none"}, "status": "moon"}
+
+        moons.insert_one(newuser)
+        moons.update_one({"id": ctx.author.id}, {
+            "$push": {"flags.name": "none", "flags.location": "none"}})
+        moons.update_one({"id": ctx.author.id}, {
+            "$push": {"past locations.name": "none", "past locations.location": "none"}})
+    else:
+        return
+
+
+class Explore(commands.Cog):
+    def __init__(self, client):
+        self.client = client
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print('dinkalaka')
+
+    @client.command()
+    async def chartcourse(self, ctx, planet=None):
+
+        await open_flightlog1(ctx)
+
+        user = ctx.author
+        val = 0
+
+        if planet == None:
+            em1 = discord.Embed(title="can't just go anywhere can you? enter a planet")
+            await ctx.send(embed=em1)
+            return
+
+        log = planets.find_one({"id": ctx.author.id})
+        c_pl = log["current planet"]
+        status1 = log["status"]
+
+        await shop.open_shop(ctx)
+        bag2 = bag1.find_one({"id": ctx.author.id})
+
+        if planet == c_pl:
+            em6 = discord.Embed(title="you're on the planet that you're trying to go to... yikes..")
+            await ctx.send(embed=em6)
+            return
+
+        if status1 == "moon":
+            await ctx.send("go to the nearest moon and try again!")
+            return
+
+        berry = await checkd(c_pl, planet)
+
+        await currency.open_account(ctx.author)
+        bank2 = bank.find_one({"id": ctx.author.id})
+        wallet_amt = bank2["wallet"]
+
+        if wallet_amt < (berry + 800):
+            em1 = discord.Embed(
+                title="you don't have enough berry to refeul/stock supplies/fix damages/account for technical glitches")
+            await ctx.send(embed=em1)
+            return
+
+        if (planet == "venus") or (planet == "mercury"):
+            val = await check_solarshields(ctx)
+
+        if val == 1:
+            em = discord.Embed(title="uh oh! you tried to go to an inner planet near the sun without solar shields",
+                               description="you lost 300 berry due to damages.")
+            await currency.update_bank(user, -300, 0)
+            em.add_field(name="to continue to the planet without damages, buy solar shields",
+                         value="use #buy solar shields", inline=False)
+            await ctx.send(embed=em)
+            return
+
+        # val2 = random.randrange(10)
+        # u = berry + 300
+
+        # if (5 <= val2 <= 10):
+        # em7 = discord.Embed(
+        # title=f"oops! your rocket failed to blast off due to system glitches... you lost {u} {berry1}")
+        # await currency.update_bank(user, -u, 0)
+        # await ctx.send(embed=em7)
+        # return
+
+        t = 0
+        for i in range(len(bag2["info"]["name"])):
+            if bag2["info"]["name"][i] == "rocket":
+                m = 0
+                for pl3 in planet_file:
+                    name = pl3["name"]
+                    if (name == planet):
+                        em = discord.Embed(
+                            title=f"costs deducted for refueling, stocking supplies and repair: {berry} {berry1}")
+                        await currency.update_bank(ctx.author, -berry, 0)
+                        await ctx.send(embed=em)
+                        m += 1
+
+                if m == 0:
+                    em1 = discord.Embed(title="enter a valid planet")
+                    await ctx.send(embed=em1)
+                    return
+
+                em = discord.Embed(title="rocket blasting off...")
+                await ctx.send(embed=em)
+
+                new_entry = log["past planets"] + "," + log["current planet"]
+                planets.update_one({"id": ctx.author.id},
+                                   {"$set": {"current planet": planet, "past planets": new_entry}})
+
+                em1 = discord.Embed(title="you have now reached" + " " + planet)
+                for pl2 in planet_file:
+                    n = pl2["name"]
+                    if n == planet:
+                        img2 = pl2["img"]
+                        desc = pl2["description"]
+                        mi = pl2["mining info"]
+
+                em1.set_image(url=img2)
+                em1.add_field(name=desc, value=mi, inline=True)
+                await ctx.send(embed=em1)
+                t += 1
+
+        if t == 0:
+            em1 = discord.Embed(title="you don't have a rocket dumbass")
+            await ctx.send(embed=em1)
+
+    @client.command()
+    async def flightlog(self, ctx):
+        log = planets.find_one({"id": ctx.author.id})
+
+        em = discord.Embed(title="log")
+        name = log["current planet"]
+        lai = log["past planets"]
+        chocolate = lai.split(",")
+        del chocolate[0]
+        em.add_field(name="current location", value=name)
+        em.add_field(name="past locations", value=chocolate)
+
+        await ctx.send(embed=em)
+
+    @client.command()
+    async def detour(self, ctx, r=None):
+
+        log = planets.find_one({"id": ctx.author.id})
+        pl = log["current planet"]
+        moon = moons.find_one({"id": ctx.author.id})
+        cl = moon["current moon"]
+
+        if pl == "saturn":
+            if r == None:
+                await ctx.send("where you tryna detour to bro?")
+                return
+
+            if r == "rings":
+                new_entry = log["past planets"] + "," + log["current planet"]
+                planets.update_one({"id": ctx.author.id},
+                                   {"$set": {"current planet": "saturn(rings)", "past planets": new_entry}})
+                em = discord.Embed(title="detour success. you are now at saturn's rings.")
+                await ctx.send(embed=em)
+                return
+
+        if r == "jupiter":
+
+            if (cl == "europa"):
+                new_entry1 = moon["past moons"] + "," + "europa"
+                moons.update_one({"id": ctx.author.id}, {"$set": {"past moons": new_entry1, "status": "planet"}})
+                planets.update_one({"id": ctx.author.id},
+                                   {"$set": {"status": "planet"}})
+                em = discord.Embed(title="detour success. you are now back on jupiter.")
+                await ctx.send(embed=em)
+                return
+
+            else:
+                return
+
+        if r == "saturn":
+            if pl == ("saturn(rings)"):
+                new_entry = log["past planets"] + "," + log["current planet"]
+                planets.update_one({"id": ctx.author.id},
+                                   {"$set": {"current planet": "saturn", "past planets": new_entry}})
+                em = discord.Embed(title="detour success. you are now back on saturn.")
+                await ctx.send(embed=em)
+
+
+        else:
+            await ctx.send("you didnt enter a correct value")
+            return
+
+    @client.command()
+    async def detourmoon(self, ctx, m=None):
+
+        await open_moonlog(ctx)
+
+        log = planets.find_one({"id": ctx.author.id})
+        pl = log["current planet"]
+        if pl == "jupiter":
+            if m == "europa":
+                moons.update_one({"id": ctx.author.id}, {"$set": {"current moon": "europa", "status": "moon"}})
+                moons.update_one({"id": ctx.author.id}, {
+                    "$set": {"current moon location.name": "europa", "current moon location.location": "ice fields"}})
+                planets.update_one({"id": ctx.author.id},
+                                   {"$set": {"status": "moon"}})
+                em = discord.Embed(title="detour success. you are now on europa's vast ice field.",
+                                   description="to see what to do here, use #infomoon europa")
+                await ctx.send(embed=em)
+                return
+
+        if pl == "saturn":
+            if m == "titan":
+                moons.update_one({"id": ctx.author.id}, {"$set": {"current moon": "titan", "status": "moon"}})
+                moons.update_one({"id": ctx.author.id}, {
+                    "$set": {"current moon location.name": "titan", "current moon location.location": "ammonia lakes"}})
+                planets.update_one({"id": ctx.author.id},
+                                   {"$set": {"status": "moon"}})
+                em = discord.Embed(title="detour success. you are now in titan's ammonia lakes",
+                                   description="to see what to do here, use #infomoon titan")
+                await ctx.send(embed=em)
+                return
+
+
+        else:
+            await ctx.send("lai laiii")
+            return
+
+    @client.command()
+    async def exploremoon(self, ctx, *, m=None):
+
+        if m == None:
+            await ctx.send("oops")
+            return
+
+        moonlog = moons.find_one({"id": ctx.author.id})
+        n = moonlog["status"]
+        g = moonlog["current moon"]
+        if n != "moon":
+            await ctx.send("oops you're not on a moon right now!")
+            return
+        f = moonlog["current moon location"]["location"]
+        if g == "europa":
+            if m == "ice cap 1" or m == "ice cap 2" or m == "penitente field" or m == "ice field":
+                moons.update_one({"id": ctx.author.id}, {
+                    "$set": {"current moon location.name": "europa", "current moon location.location": m}})
+                moons.update_one({"id": ctx.author.id}, {
+                    "$push": {"past locations.name": "europa", "past locations.location": f}})
+                aem = discord.Embed(title=f"you are now on europa's {m}")
+                await ctx.send(embed = aem)
+
+            else:
+                return
+
+        if g == "titan":
+            if m == "xanadu" or m == "ligeia mare" or m == "ammonia volcano" or m == "ammonia lakes":
+                moons.update_one({"id": ctx.author.id}, {
+                    "$set": {"current moon location.name": "titan", "current moon location.location": m}})
+                moons.update_one({"id": ctx.author.id}, {
+                    "$push": {"past locations.name": "titan", "past locations.location": f}})
+                aem = discord.Embed(title=f"you are now on titan's {m}")
+                await ctx.send(embed = aem)
+
+            else:
+                return
+
+        else:
+            return
+
+    @client.command()
+    async def moonlog(self, ctx):
+        ml = moons.find_one({"id": ctx.author.id})
+
+        cm = ml["current moon"]
+        pm = ml["past moons"]
+        pm1 = pm.split(",")
+        cl_name = ml["current moon location"]["name"]
+        cl_location = ml["current moon location"]["location"]
+        pl_name = ml["past locations"]["name"]
+        # pl_n = pl_name.split(",")
+        pl_location = ml["past locations"]["location"]
+        # pl_l = pl_location.split(",")
+        flags1 = ml["flags"]["name"]
+        flags2 = ml["flags"]["location"]
+
+
+        em = discord.Embed(title="moonlog")
+
+        em.add_field(name=f"current moon: {cm}", value=f"past moons : {pm1}", inline=False)
+        em.add_field(name=f"current location on {cl_name}:", value=f"{cl_location}", inline=False)
+        em.add_field(name=pl_name, value=pl_location, inline=False)
+        em.add_field(name=flags1, value=flags2, inline=False)
+
+        await ctx.send(embed=em)
+
+    @client.command()
+    async def plantflag(self, ctx):
+        await open_moonlog(ctx)
+        moonlog = moons.find_one({"id": ctx.author.id})
+        if moonlog["flags"]["name"] is None:
+            moons.update_one({"id": ctx.author.id}, {
+                "$push": {"flags.name": "none", "flags.location": "none"}})
+        moonlog = moons.find_one({"id": ctx.author.id})
+        n = moonlog["status"]
+        g = moonlog["current moon"]
+        if n != "moon":
+            await ctx.send("oops you're not on a moon right now!")
+            return
+        f = moonlog["current moon location"]["location"]
+        if g == "europa":
+            if f == "ice cap 1" or f == "ice cap 2" or f == "penitente field":
+                for i in range(len(moonlog["flags"]["location"])):
+                    if moonlog["flags"]["location"][i] == f:
+                        em = discord.Embed(title="you already have a flag here!", description="you can't plant a flag in more than one location")
+                        await ctx.send(embed = em)
+                        break
+                else:
+                    moons.update_one({"id": ctx.author.id}, {
+                        "$push": {"flags.name": g, "flags.location": f}})
+                    em = discord.Embed(title=f"you planted a flag on {f}!",
+                                       description="⋆⛧┈┈┈┈﹤୨♡୧﹥ ┈┈┈┈*⛧⋆")
+                    await ctx.send(embed=em)
+                    return
+            else:
+                em = discord.Embed(title="ouchie! you can't plant flags here",
+                                   description="use #infomoon europa to see where to plant flags")
+                await ctx.send(embed=em)
+                return
+
+
+
+def setup(client):
+    client.add_cog(Explore(client))
