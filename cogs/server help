@@ -8,15 +8,15 @@ import os
 intents = discord.Intents.default()
 intents.members = True
 intents.guilds = True
-os.chdir("C:\\Users\\vxg19\\PycharmProjects\\chutneysambar\\cogs")
+os.chdir("C:\\Users\\ ")
 
 
-talk_channels=[842778325289664522, 844488733947723809]
+talk_channels=[]
 
 level = []
 levelnum= [5,10,15,17]
 
-cluster=MongoClient("mongodb+srv://artemis200115:Pharoahegypt123$@botcluster.shgri.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+cluster=MongoClient(" ")
 levelling=cluster["discordbot"]["leveling"]
 
 
