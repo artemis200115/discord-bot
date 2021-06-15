@@ -1,0 +1,159 @@
+import discord
+from discord.ext import commands
+from pymongo import MongoClient
+import json
+import os
+
+
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+os.chdir("C:\\Users\\vxg19\\PycharmProjects\\chutneysambar\\cogs")
+
+
+talk_channels=[842778325289664522, 844488733947723809]
+
+level = []
+levelnum= [5,10,15,17]
+
+cluster=MongoClient("mongodb+srv://artemis200115:Pharoahegypt123$@botcluster.shgri.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+levelling=cluster["discordbot"]["leveling"]
+
+
+client = commands.Bot(command_prefix='#', intents=intents)
+async def open_account(user):
+    users = await get_bank_data()
+
+    if str(user.id) in users:
+        return False
+    else:
+        users[str(user.id)] = {}
+        users[str(user.id)]["wallet"] = 0
+        users[str(user.id)]["bank"] = 0
+
+    with open("bank.json", "w") as f:
+        json.dump(users, f)
+    return True
+
+
+async def get_bank_data():
+    with open("bank.json", "r") as f:
+        users = json.load(f)
+    return users
+
+
+#client.remove_command('help')
+
+class Help(commands.Cog):
+    def __init__(self,client):
+        self.client=client
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print('dinkalaka')
+
+    @client.command()
+    async def server(self,ctx):
+        name = str(ctx.guild.name)
+        description = str(ctx.guild.description)
+
+        owner = str(ctx.guild.owner)
+        id = str(ctx.guild.id)
+        region = str(ctx.guild.region)
+        memberCount = str(ctx.guild.member_count)
+
+        icon = str(ctx.guild.icon_url)
+
+        embed = discord.Embed(
+            title="🤖 " + name + " info",
+            description=description,
+            color=discord.Color.blue()
+        )
+        embed.set_thumbnail(url=icon)
+        embed.add_field(name="Owner", value=owner, inline=True)
+        embed.add_field(name="Server ID", value=id, inline=True)
+        embed.add_field(name="Region", value=region, inline=True)
+        embed.add_field(name="Member Count", value=memberCount, inline=True)
+
+        await ctx.send(embed=embed)
+
+    @client.command()
+    async def userinfo(self,ctx,member: discord.Member = None):
+        member = ctx.author if not member else member
+        stats = levelling.find_one({"id":member.id})
+        if stats is None:
+            lvl=0
+        else:
+            xp = stats["xp"]
+            lvl = 0
+            rank = 0
+            while True:
+                if xp < ((50 * (lvl ** 2)) + (50 * (lvl))):
+                    break
+                lvl += 1
+            xp -= ((50 * ((lvl - 1) ** 2)) + (50 * (lvl - 1)))
+            boxes = int((xp / (200 * ((1 / 2) * lvl))) * 20)
+            rankings = levelling.find().sort("xp", -1)
+            for x in rankings:
+                rank += 1
+                if stats["id"] == x["id"]:
+                    break
+
+        roles = [role for role in member.roles]
+        if member is None:
+            await open_account(member)
+            user = member
+        else:
+            await open_account(member)
+            user = member
+
+        users = await get_bank_data()
+        wallet_amt = users[str(user.id)]["wallet"]
+        bank_amt = users[str(user.id)]["bank"]
+
+
+
+        embed = discord.Embed(color=member.color, timestamp=ctx.message.created_at)
+        embed.set_author(name=f'user info : {member}')
+        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_footer(text=f'requested by : {ctx.author}')
+        embed.add_field(name='ID:', value=member.id)
+        embed.add_field(name='guild name:', value=member.display_name)
+        embed.add_field(name='joined at:', value=member.joined_at)
+        # embed.add_field(name='roles:', value=" ".join([role.mention for role in roles]))
+        embed.add_field(name='top role:', value=member.top_role.mention)
+        embed.add_field(name="wallet", value=wallet_amt)
+        embed.add_field(name="bank balance", value=bank_amt)
+        embed.add_field(name="level", value=f"{lvl}")
+
+        await open_account(member)
+        user = member
+        users = await get_bank_data()
+        try:
+            bag = users[str(user.id)]["bag"]
+        except:
+            bag = []
+
+        for item in bag:
+            name = item["item"]
+            if name == "badge":
+                emoji = item["emoji"]
+                embed.add_field(name="badges", value=f"{emoji}")
+                break
+            else:
+                embed.add_field(name="badges", value=f"none")
+        await ctx.send(embed=embed)
+
+    #@client.command(pass_context=True)
+    #async def help(ctx):
+       # author = ctx.message.author
+        #embed = discord.Embed(
+        #    color=discord.Color.blue()
+        #)
+        #embed.set_author(name='👑 help')
+        #embed.add_field(name='#ping', value='Returns Pong', inline=False)
+        #await author.send(embed=embed)
+
+
+def setup(client):
+    client.add_cog(Help(client))
