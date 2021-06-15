@@ -10,7 +10,7 @@ from cogs import shop
 intents = discord.Intents.default()
 intents.members = True
 intents.guilds = True
-os.chdir("C:\\Users\\vxg19\\PycharmProjects\\bot_chan\\cogs")
+
 client = commands.Bot(command_prefix='#', intents=intents)
 async def check_solarshields(ctx):
     t = 0
