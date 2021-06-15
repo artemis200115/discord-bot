@@ -38,17 +38,6 @@ async def check_item(ctx, cp, n):
                 await currency.update_clusters(ctx, "ammonium", "<:ammonium:854307315830226945>", 1)
                 return 0
 
-        if n == 2:
-            val = random.randrange(20)
-            if 0 <= val <= 6 and cp == "europa":
-                await currency.update_clusters(ctx, "silica gel", "<:silicagel:852230990230323210>", 1)
-                return 0
-            if 7 <= val <= 15 and cp == "europa":
-                return 4
-            if 7 <= val <= 15 and cp == "titan":
-                return 5
-
-
         if n == 3:
             val = random.randrange(20)
 
@@ -130,16 +119,8 @@ class Crystals(commands.Cog):
         m = await check_item(ctx, cp, n)
         await ctx.send(f"{m}")
 
-        if m== 0 and cp == "europa":
-            em = discord.Embed(title="wow! you found a very rare silica gel <:silicagel:852230990230323210>", description = "✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
-            await ctx.send(embed=em)
-            return
         if m== 0 and cm_l == "ammonia volcano":
             em = discord.Embed(title="wow! you found a very rare lava crystal <:lava:854310786058813441>", description = "✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
-            await ctx.send(embed=em)
-            return
-        elif m ==0:
-            em = discord.Embed(title="wow! you found a very rare ammonium crystal <:ammonium:854307315830226945>", description = "✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
             await ctx.send(embed=em)
             return
         if m == 1:
