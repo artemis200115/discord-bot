@@ -1,0 +1,255 @@
+import discord
+from discord.ext import commands
+import random
+import os
+from pymongo import MongoClient
+from cogs import currency
+from cogs import shop
+
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+os.chdir(" ")
+
+client = commands.Bot(command_prefix='#', intents=intents)
+
+async def open_crystals1(ctx):
+    log = crystals1.find_one({"id": ctx.author.id})
+    if log is None:
+        crystals1.update_one({"id": ctx.author.id},
+                             {"$push": {"info.emoji": "none", "info.name": "none", "info.amount": 0}}, upsert= True)
+
+
+async def check_item(ctx, cp, n):
+
+    if cp == "europa" or cp == "titan":
+        if n == 1:
+            val2 = random.randrange(1,10)
+            if 0<= val2 <=3:
+                return 2
+            if 4<= val2 <=6 and cp == "europa":
+                return 3
+            if 4<= val2 <=6 and cp == "titan":
+                return 5
+            if 7<= val2 <=10 and cp == "europa":
+                await currency.update_clusters(ctx, "silica gel", "<:silicagel:852230990230323210>", 1)
+                return 0
+            if 7 <= val2 <= 10 and cp == "titan":
+                await currency.update_clusters(ctx, "ammonium", "<:ammonium:854307315830226945>", 1)
+                return 0
+
+        if n == 2:
+            val = random.randrange(20)
+            if 0 <= val <= 6 and cp == "europa":
+                await currency.update_clusters(ctx, "silica gel", "<:silicagel:852230990230323210>", 1)
+                return 0
+            if 7 <= val <= 15 and cp == "europa":
+                return 4
+            if 7 <= val <= 15 and cp == "titan":
+                return 5
+
+
+        if n == 3:
+            val = random.randrange(20)
+
+            if 0 <= val <= 6 and cp == "europa":
+                await currency.update_clusters(ctx, "silica gel", "<:silicagel:852230990230323210>", 1)
+                return 0
+            if 7 <= val <= 15 and cp == "europa":
+                amount = 1
+                bag2 = bag1.find_one({"id": ctx.author.id})
+                for i in range(len(bag2["info"]["name"])):
+                    if bag2["info"]["name"][i] == "extraterrestrial life":
+                        new_amt = bag2["info"]["amount"][i] + amount
+                        bag1.update_one({"id": ctx.author.id, "info.name": "extraterrestrial life"},
+                                        {"$set": {"info.amount.$": new_amt}})
+                        await ctx.send("lai")
+                        return 1
+                else:
+                    bag1.update_one({"id": ctx.author.id},
+                                    {"$push": {"info.emoji": "🧪", "info.name": "extraterrestrial life",
+                                               "info.amount": amount}})
+                await ctx.send("lai")
+                return 1
+
+            if 7 <= val <= 15 and cp == "titan":
+                await currency.update_clusters(ctx, "lava", "<:lava:854310786058813441>", 1)
+                return 0
+
+            else:
+                return 2
+
+
+class Crystals(commands.Cog):
+    def __init__(self, client):
+        self.client = client
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print('dinkalaka')
+
+    @client.command()
+    async def clusters(self, ctx):
+        await open_crystals1(ctx)
+        crystals2 = crystals1.find_one({"id": ctx.author.id})
+        v = crystals2["info"]["emoji"]
+        del v[0]
+        f = crystals2["info"]["name"]
+        del f[0]
+        s = crystals2["info"]["amount"]
+        del s[0]
+        em = discord.Embed(title = "crystals")
+        for i in range(len(v)):
+            em.add_field(name= f"{f[i]}  {v[i]}", value= s[i])
+
+        await ctx.send(embed=em)
+
+    @client.command()
+    async def drill(self, ctx):
+        await open_crystals1(ctx)
+        await shop.open_shop(ctx)
+        ml = moons.find_one({"id": ctx.author.id})
+
+        s = ml["status"]
+        cp = ml["current moon"]
+        cm_l = ml["current moon location"]["location"]
+        n = 0
+        if cp == "europa" or cp == "titan":
+            if cm_l == "ice fields" or cm_l == "ammonia lakes":
+                n = 1
+            if cm_l == "ice cap 1" or cm_l == "ice cap 2" or cm_l == "xanadu" or cm_l == "ligeia mare" :
+                n = 2
+            if cm_l == "penitente field" or cm_l == "ammonia volcano":
+                n = 3
+
+        if s == "planet":
+            em = discord.Embed(title="oops you're not on a moon right now!")
+            await ctx.send(embed=em)
+            return
+
+        m = await check_item(ctx, cp, n)
+        await ctx.send(f"{m}")
+
+        if m== 0 and cp == "europa":
+            em = discord.Embed(title="wow! you found a very rare silica gel <:silicagel:852230990230323210>", description = "✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await ctx.send(embed=em)
+            return
+        if m== 0 and cm_l == "ammonia volcano":
+            em = discord.Embed(title="wow! you found a very rare lava crystal <:lava:854310786058813441>", description = "✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await ctx.send(embed=em)
+            return
+        elif m ==0:
+            em = discord.Embed(title="wow! you found a very rare ammonium crystal <:ammonium:854307315830226945>", description = "✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await ctx.send(embed=em)
+            return
+        if m == 1:
+            em = discord.Embed(title="wow! you found what looks to be extraterrestrial life 🧪... ",
+                               description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            em.add_field(name= "send your samples for research with #sendresearch samples (amount) for some exciting results!", value = "✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧", inline=False)
+            await ctx.send(embed=em)
+            return
+
+        if m == 2:
+            em = discord.Embed(title="oops! you didn't find anything except for water and ice, try drilling some more!",
+                               description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await ctx.send(embed=em)
+            return
+
+        if m == 3:
+            em = discord.Embed(
+                title=f"yikes! your drilling triggered a silica plume which caused destruction, you lost 100 berry{berry1}",
+                description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await currency.update_bank(ctx.author, -100, 0)
+            await ctx.send(embed=em)
+            return
+
+        if m == 4:
+            berry = random.randrange(200)
+            em = discord.Embed(
+                title=f"you found {berry}{berry1} ",
+                description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await currency.update_bank(ctx.author, berry, 0)
+            await ctx.send(embed=em)
+            return
+
+        if m == 5:
+            em = discord.Embed(
+                title=f"yikes! your drilling equipment was not well protected! ammonia has burnt through it, you lost 200 berry{berry1} to fix it",
+                description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await currency.update_bank(ctx.author, -200, 0)
+            await ctx.send(embed=em)
+            return
+
+
+
+    @client.command()
+    async def sendresearch(self, ctx, e = None, *, amount = 1):
+        await shop.open_shop(ctx)
+        if e == None:
+            em = discord.Embed(title="what do you want to send for research?",
+                               description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await ctx.send(embed=em)
+            return
+        t = 0
+        if e == "samples":
+            bag2 = bag1.find_one({"id": ctx.author.id})
+            for i in range(len(bag2["info"]["name"])):
+                if bag2["info"]["name"][i] == "extraterrestrial life":
+                    t = 1
+                    b = bag2["info"]["amount"][i]
+
+                    if b<amount:
+                        em = discord.Embed(title="you don't have enough samples to research!",
+                                           description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+                        await ctx.send(embed=em)
+                        t = 9
+                        break
+
+                    if b == 1:
+                        bag1.update_one({"id": ctx.author.id, "info.name":"extraterrestrial life" },
+                                             {"$unset": {"info.amount.$": b}}, upsert=True)
+                        bag1.update_one({"id": ctx.author.id, "info.name":"extraterrestrial life" },
+                                             {"$pull": {"info.amount": None}}, upsert=True)
+                        bag1.update_one({"id": ctx.author.id, "info.name":"extraterrestrial life" },
+                                             {"$pull": {"info.emoji": {"$in": ["🧪"]}}}, upsert=True)
+                        bag1.update_one({"id": ctx.author.id, "info.name": "extraterrestrial life"},
+                                             {"$pull": {"info.name": {"$in": ["extraterrestrial life"]}}}, upsert=True)
+
+                    else:
+                        new_amt = b - amount
+                        bag1.update_one({"id": ctx.author.id, "info.name": "extraterrestrial life"},
+                                             {"$set": {"info.amount.$": new_amt}})
+
+            if t == 0:
+                em = discord.Embed(title="you don't have samples in your inventory!",
+                                   description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+                await ctx.send(embed=em)
+                return
+
+            if t == 9:
+                return
+        else:
+            return
+
+        val = random.randrange(1,3)
+        if val == 1:
+            em = discord.Embed(title=f"you sent {amount} samples for research but didn't find anything exciting... you received 200 berry {berry1}",
+                               description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await ctx.send(embed=em)
+            await currency.update_bank(ctx.author,200, 0)
+            return
+        if val == 2:
+            em = discord.Embed(
+                title=f"you sent {amount} samples for research and found strains of a new virus!! you received 50000 berry as your reward {berry1}",
+                description="✧༝┉┉┉┉┉˚❋ ❋ ❋˚┉┉┉┉┉༝✧")
+            await ctx.send(embed=em)
+            await currency.update_bank(ctx.author, 50000, 0)
+            return
+        else:
+            return
+
+
+
+
+def setup(client):
+    client.add_cog(Crystals(client))
