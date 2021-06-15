@@ -1,0 +1,186 @@
+import discord
+from discord.ext import commands
+import os
+from cogs import currency
+from cogs import crystals
+from pymongo import MongoClient
+
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+os.chdir("C:\\Users\\vxg19\\PycharmProjects\\bot_chan\\cogs")
+client = commands.Bot(command_prefix='#', intents=intents)
+
+async def open_shop(ctx):
+    log = bag1.find_one({"id": ctx.author.id})
+    if log is None:
+        bag1.update_one({"id": ctx.author.id},
+                             {"$push": {"info.emoji": "none", "info.name": "none", "info.amount": 0}}, upsert= True)
+
+async def buy_this(ctx, item_name, amount):
+    item_name = item_name.lower()
+    name_ = None
+    for item in mainshop:
+        name = item["name"].lower()
+        if name == item_name:
+            name_ = name
+            price = item["price"]
+            emoji = item["emoji"]
+            break
+    if name_ == None:
+        return [False, 1]
+
+    cost = int(price * amount)
+    bal = await currency.update_bank(ctx.author, -cost, 0)
+
+    if bal == 6:
+        return [False, 2]
+
+    await open_shop(ctx)
+
+    bag2 = bag1.find_one({"id": ctx.author.id})
+    for i in range(len(bag2["info"]["name"])):
+        if bag2["info"]["name"][i] == name_:
+            new_amt = bag2["info"]["amount"][i] + amount
+            bag1.update_one({"id": ctx.author.id, "info.name": name_},
+                                 {"$set": {"info.amount.$": new_amt}})
+            break
+    else:
+        bag1.update_one({"id": ctx.author.id},
+                        {"$push": {"info.emoji": emoji, "info.name": name_,
+                                   "info.amount": amount}})
+
+    return [True, "Worked"]
+
+
+class Shop(commands.Cog):
+    def __init__(self, client):
+        self.client = client
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print('dinkalaka')
+
+    @client.command()
+    async def shop(self, ctx):
+        em = discord.Embed(title="shop")
+        for item in mainshop:
+            emoji = item["emoji"]
+            name = item["name"]
+            price = item["price"]
+            desc = item["description"]
+            em.add_field(name=emoji + name, value=f"{price} berries| {desc}")
+
+        await ctx.send(embed=em)
+
+    @client.command()
+    async def buy(self, ctx, *, item, amount=1):
+        await currency.open_account(ctx.author)
+
+        res = await buy_this(ctx, item, amount)
+
+        if not res[0]:
+            if res[1] == 1:
+                await ctx.send("the item is not available")
+                return
+            if res[1] == 2:
+                await ctx.send(f"you don't have enough berries to buy this item")
+                return
+
+        await ctx.send(f"you just bought {item} ")
+
+    @client.command()
+    async def inventory(self, ctx):
+        await open_shop(ctx)
+        bag2 = bag1.find_one({"id": ctx.author.id})
+        v = bag2["info"]["emoji"]
+        del v[0]
+        f = bag2["info"]["name"]
+        del f[0]
+        s = bag2["info"]["amount"]
+        del s[0]
+        em = discord.Embed(title = "inventory")
+        for i in range(len(v)):
+            em.add_field(name= f"{f[i]}  {v[i]}", value= s[i])
+
+        await ctx.send(embed=em)
+
+    @client.command()
+    async def sell(self, ctx, *, n=None, amount=1):
+
+        if n == None:
+            em1 = discord.Embed(title=f"what are you trying to sell?", description="· • —– ٠ ✤ ٠ —– • ·")
+            await ctx.send(embed=em1)
+            return
+
+        m = 0
+        await crystals.open_crystals1(ctx)
+
+        log = crystals1.find_one({"id": ctx.author.id})
+
+        t = None
+
+        for i in range(len(log["info"]["name"])):
+            if log["info"]["name"][i] == n:
+
+                m = 9
+                emoji = log["info"]["emoji"][i]
+                old_amt = log["info"]["amount"][i]
+                if old_amt == 1:
+                    crystals1.update_one({"id": ctx.author.id, "info.name": n},
+                                         {"$unset": {"info.amount.$": old_amt}}, upsert=True)
+                    crystals1.update_one({"id": ctx.author.id, "info.name": n},
+                                         {"$pull": {"info.amount": None}}, upsert=True)
+                    crystals1.update_one({"id": ctx.author.id, "info.name": n},
+                                         {"$pull": {"info.emoji": {"$in": [emoji]}}}, upsert= True)
+                    crystals1.update_one({"id": ctx.author.id, "info.name": n},
+                                         {"$pull": {"info.name":  {"$in": [n]}}}, upsert= True)
+
+                    t = 2
+                    break
+                if old_amt < amount:
+                    em = discord.Embed(title=f"you don't have enough of {n} to sell",
+                                       description="· • —– ٠ ✤ ٠ —– • ·")
+                    await ctx.send(embed=em)
+                    t = 4
+                    break
+                new_amt = log["info"]["amount"][i] - amount
+                crystals1.update_one({"id": ctx.author.id, "info.name": n},
+                                     {"$set": {"info.amount.$": new_amt}})
+                t = 1
+                break
+
+
+        if t == 4:
+            return
+
+        if m == 0:
+            em = discord.Embed(title=f"you don't have that crystal in your clusters", description="· • —– ٠ ✤ ٠ —– • ·")
+            await ctx.send(embed=em)
+            return
+
+        for item in crystals3:
+            name = item["name"]
+            if name == n:
+                rl = item["rarity level"]
+                break
+
+        if rl == "common":
+            berry2 = 100
+
+        if rl == "uncommon":
+            berry2 = 250
+
+        if rl == "rare":
+            berry2 = 500
+
+        await currency.update_bank(ctx.author, berry2, 0)
+
+        em1 = discord.Embed(title=f"you just sold {n} and recieved {berry2} berry {berry1}",
+                            description="· • —– ٠ ✤ ٠ —– • ·")
+        await ctx.send(embed=em1)
+        return
+
+
+def setup(client):
+    client.add_cog(Shop(client))
