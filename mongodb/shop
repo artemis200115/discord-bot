@@ -8,14 +8,8 @@ from pymongo import MongoClient
 intents = discord.Intents.default()
 intents.members = True
 intents.guilds = True
-os.chdir("C:\\Users\\vxg19\\PycharmProjects\\bot_chan\\cogs")
-client = commands.Bot(command_prefix='#', intents=intents)
+client = commands.Bot(command_prefix='#')
 
-async def open_shop(ctx):
-    log = bag1.find_one({"id": ctx.author.id})
-    if log is None:
-        bag1.update_one({"id": ctx.author.id},
-                             {"$push": {"info.emoji": "none", "info.name": "none", "info.amount": 0}}, upsert= True)
 
 async def buy_this(ctx, item_name, amount):
     item_name = item_name.lower()
@@ -130,8 +124,6 @@ class Shop(commands.Cog):
                     crystals1.update_one({"id": ctx.author.id, "info.name": n},
                                          {"$unset": {"info.amount.$": old_amt}}, upsert=True)
                     crystals1.update_one({"id": ctx.author.id, "info.name": n},
-                                         {"$pull": {"info.amount": None}}, upsert=True)
-                    crystals1.update_one({"id": ctx.author.id, "info.name": n},
                                          {"$pull": {"info.emoji": {"$in": [emoji]}}}, upsert= True)
                     crystals1.update_one({"id": ctx.author.id, "info.name": n},
                                          {"$pull": {"info.name":  {"$in": [n]}}}, upsert= True)
@@ -159,22 +151,6 @@ class Shop(commands.Cog):
             await ctx.send(embed=em)
             return
 
-        for item in crystals3:
-            name = item["name"]
-            if name == n:
-                rl = item["rarity level"]
-                break
-
-        if rl == "common":
-            berry2 = 100
-
-        if rl == "uncommon":
-            berry2 = 250
-
-        if rl == "rare":
-            berry2 = 500
-
-        await currency.update_bank(ctx.author, berry2, 0)
 
         em1 = discord.Embed(title=f"you just sold {n} and recieved {berry2} berry {berry1}",
                             description="· • —– ٠ ✤ ٠ —– • ·")
