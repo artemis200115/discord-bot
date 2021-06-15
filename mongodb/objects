@@ -1,0 +1,132 @@
+
+import discord
+from discord.ext import commands, tasks
+from pymongo import MongoClient
+import os
+from cogs import shop
+from cogs import explore
+
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+os.chdir("C:\\Users\\vxg19\\PycharmProjects\\bot_chan\\cogs")
+client = commands.Bot(command_prefix='#', intents=intents)
+
+
+
+
+async def open_objs(user):
+    objs = objects.find_one({"id": user.id})
+    if objs is None:
+        objects.update_one({"id": user.id},
+                             {"$push": {"info.emoji": "none", "info.name": "none", "info.amount": 0, "info.planet": "none"}}, upsert= True)
+
+async def update_objs(ctx, name, emoji, amount, pl):
+    await open_objs(ctx.author)
+    await explore.open_flightlog1(ctx)
+    objs = objects.find_one({"id": ctx.author.id})
+    for i in range(len(objs["info"]["name"])):
+        if objs["info"]["planet"][i] == pl:
+            new_amt = objs["info"]["amount"][i] + amount
+            objects.update_one({"id": ctx.author.id, "info.name": name},
+                               {"$set": {"info.amount.$": new_amt}})
+            return
+
+    else:
+        objects.update_one({"id": ctx.author.id},
+                             {"$push": {"info.emoji": emoji, "info.name": name,
+                                        "info.amount": amount, "info.planet" : pl}})
+        return
+
+
+
+class Objects1(commands.Cog):
+    def __init__(self, client):
+        self.client = client
+
+    @tasks.loop(seconds=10)
+    async def sat_message(self, ctx, pl):
+        # channel = 842778325289664522
+        em = discord.Embed(title=f"{ctx.author}'s satellite feedback from {pl}")
+        messages = "receiving unusual messages from a space vehicle... you might be prone to alien attack within the next 5 minutes"
+        em.add_field(name=messages,
+                     value="satellite will continue to relay messages unless you stop feedback (#satellitefeedback stop)",
+                     inline=False)
+        await ctx.send(embed=em)
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print('dinkalaka')
+
+    @client.command()
+    async def deploy(self, ctx, s=None, amount=1):
+        if s == None:
+            em = discord.Embed(title=f"enter what to do deploy")
+            await ctx.send(embed = em)
+            return
+
+        await shop.open_shop(ctx)
+        await explore.open_flightlog1(ctx)
+        bag2 = bag1.find_one({"id":ctx.author.id})
+        log = planets.find_one({"id":ctx.author.id})
+        m=0
+        for i in range(len(bag2["info"]["name"])):
+            if bag2["info"]["name"][i] == "satellite":
+                name_ = "satellite"
+                emoji = bag2["info"]["emoji"][i]
+                amount1 = bag2["info"]["amount"][i]
+                amount2 = amount + amount1
+                pl = log["current planet"]
+                await update_objs(ctx, name_, emoji, amount2, pl)
+                m+=1
+                break
+
+        if m == 0:
+            em1 = discord.Embed(title=f"object to deploy not found in bag :((", description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+            await ctx.send(embed=em1)
+            return
+        em1 = discord.Embed(title=f"you deployed a satellite on {pl}!", description="꘎♡━━━━━━━━━━━━━━━♡꘎")
+        await ctx.send(embed=em1)
+        return
+
+    """@client.command()
+    async def satellitefeedback(self, ctx, s=None):
+
+        if s == "stop":
+            self.sat_message.stop()
+            return
+
+        user = ctx.author
+        users = await explore.get_flightlog()
+        try:
+            log = users[str(user.id)]
+        except:
+            log = []
+
+        for item in log:
+            pl = item["current planet"]
+
+        m = 0
+
+        users1 = await get_objs_data()
+        try:
+            objs1 = users1[str(user.id)]
+        except:
+            objs1 = []
+
+        for item1 in objs1:
+            pl2 = item1["planet"]
+            if pl2 == pl:
+                em = discord.Embed(title=f"beginning {ctx.author}'s satellite feedback...",
+                                   description=" you will receive feedback every 5 minutes. ")
+                await ctx.send(embed=em)
+                self.sat_message.start(ctx, pl)
+                m += 1
+        if m == 0:
+            em = discord.Embed(
+                title="you don't have a satellite on this planet. deploy a satellite first and use this command again.")
+            await ctx.send(embed=em)"""
+
+
+def setup(client):
+    client.add_cog(Objects1(client))
